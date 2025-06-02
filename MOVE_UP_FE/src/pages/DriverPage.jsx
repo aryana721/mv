@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import socketIOClient from 'socket.io-client';
 
-const socket = socketIOClient('http://localhost:5000');
+const socket = socketIOClient('https://mv-1-qyzm.onrender.com');
 
 const DriverPage = () => {
   const [user, setUser] = useState(null);

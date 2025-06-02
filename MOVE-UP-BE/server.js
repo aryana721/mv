@@ -29,6 +29,11 @@ app.use('/vendor', vendorRoutes);
 app.use('/driver', driverRoutes);
 
 // MongoDB Connection
+
+app.get('/', (req, res) => {
+  res.send('Welcome to MOVE-UP Backend API');
+});
+
 mongoose.connect(process.env.MONGO_URI).then(() => console.log('MongoDB connected'))
   .catch(err => console.log(err));
 // Sockets
