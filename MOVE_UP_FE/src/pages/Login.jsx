@@ -13,6 +13,9 @@ const Login = () => {
     localStorage.setItem('user', JSON.stringify(res.data.user));
     if (res.data.user.role === 'Admin') navigate('/admin');
     else if (res.data.user.role === 'Vendor') navigate('/vendor');
+    else{
+      navigate('/driver');
+    }
   };
 
   return (
