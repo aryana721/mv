@@ -28,6 +28,10 @@ app.use('/admin', adminRoutes);
 app.use('/vendor', vendorRoutes);
 app.use('/driver', driverRoutes);
 
+app.get('/', (req, res) => {
+  res.send('Welcome to MOVE-UP Backend API');
+});
+
 // MongoDB Connection
 
 app.get('/', (req, res) => {
@@ -40,6 +44,8 @@ mongoose.connect(process.env.MONGO_URI).then(() => console.log('MongoDB connecte
 io.on('connection', (socket) => {
   handleDriverSocket(socket, io);
 });
-
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+const HOST = '0.0.0.0'; 
+server.listen(PORT, HOST, () => {
+  console.log(`🚀 Server running on http://${HOST}:${PORT}`);
+});
