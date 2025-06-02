@@ -5,7 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import { useParams, useNavigate } from 'react-router-dom';
 import socketIOClient from 'socket.io-client';
 
-const socket = socketIOClient('https://mv-1-qyzm.onrender.com/');
+const socket = socketIOClient('http://localhost:5000');
 
 const redIcon = new L.Icon({
     iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
@@ -58,7 +58,7 @@ const RouteTrackingPage = () => {
         if (!user) return;
         const fetchRoute = async () => {
             try {
-                const res = await fetch(`https://mv-1-qyzm.onrender.com/driver/${user._id}/${routeId}/route`);
+                const res = await fetch(`http://localhost:5000/driver/${user._id}/${routeId}/route`);
                 if (!res.ok) throw new Error('Route fetch failed');
                 const data = await res.json();
                 setRoute(data);

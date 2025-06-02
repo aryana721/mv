@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://mv-1-qyzm.onrender.com',
+  baseURL: 'http://localhost:5000',
 });
 
 api.interceptors.request.use(config => {

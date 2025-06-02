@@ -13,14 +13,14 @@ function handleDriverSocket(socket, io) {
     socket.leave(routeId);
   });
 
-  socket.on('start-route', async ({ driverId, from, to, fromCoords, toCoords }) => {
+  socket.on('start-route', async ({ driverId, from, to, fromCoords, toCoords,initialLiveCoords  }) => {
     const newRoute = new Route({
       driverId,
       from,
       to,
       fromCoords,
       toCoords,
-      route: [],
+      route: [initialLiveCoords],
     });
     await newRoute.save();
     io.to(`driver-${driverId}`).emit('route-created', newRoute);

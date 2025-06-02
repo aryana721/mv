@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import socketIOClient from 'socket.io-client';
 
-const socket = socketIOClient('https://mv-1-qyzm.onrender.com');
+const socket = socketIOClient('http://localhost:5000');
 
 const DriverPage = () => {
   const [user, setUser] = useState(null);
@@ -40,29 +40,43 @@ const DriverPage = () => {
   };
 
   const handleCreateRoute = async () => {
-    if (!from || !to) return alert('Both "From" and "To" fields are required');
+  if (!from || !to) return alert('Both "From" and "To" fields are required');
 
-    const fromCoords = await geocode(from);
-    const toCoords = await geocode(to);
+  const fromCoords = await geocode(from);
+  const toCoords = await geocode(to);
 
-    if (!fromCoords || !toCoords) {
-      alert('Invalid location entered. Please try again.');
-      return;
+  if (!fromCoords || !toCoords) {
+    alert('Invalid location entered. Please try again.');
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const currentCoords = [
+         position.coords.latitude,
+         position.coords.longitude
+      ];
+
+      socket.emit('start-route', {
+        driverId: user._id,
+        from,
+        to,
+        fromCoords,
+        toCoords,
+        initialLiveCoords: currentCoords
+      });
+
+      setTimeout(() => fetchRoutes(user._id), 1000);
+      setFrom('');
+      setTo('');
+    },
+    (error) => {
+      console.error('Error getting current location:', error);
+      alert('Unable to fetch your current location.');
     }
+  );
+};
 
-    socket.emit('start-route', {
-      driverId: user._id,
-      from,
-      to,
-      fromCoords,
-      toCoords
-    });
-
-    // Wait a moment to let backend save the new route, then refresh
-    setTimeout(() => fetchRoutes(user._id), 1000);
-    setFrom('');
-    setTo('');
-  };
 
   const handleContinue = (routeId) => {
     navigate(`/driver/route/${routeId}`);
