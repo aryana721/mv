@@ -6,6 +6,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import VendorDashboard from './pages/VendorDashboard';
 import DriverPage from './pages/DriverPage';
 import DriverRouteView from './pages/DriverRouteView';
+import RouteTrackingPage from './pages/RouteTrackingPage ';
 
 function App() {
   const user = JSON.parse(localStorage.getItem('user'));
@@ -26,8 +27,9 @@ function App() {
         path="/driver"
         element={user?.role === 'Driver' ? <DriverPage /> : <Navigate to="/" />}
       />
+      <Route path="/driver/route/:routeId" element={<RouteTrackingPage />} />
       <Route
-        path="/route/:driverId"
+        path="/route/:routeId/:driverId"
         element={<DriverRouteView />}
       />
     </Routes>

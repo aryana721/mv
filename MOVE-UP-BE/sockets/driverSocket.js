@@ -5,30 +5,60 @@ function handleDriverSocket(socket, io) {
     socket.join(`driver-${driverId}`);
   });
 
-socket.on('start-route', async ({ driverId, from, to, fromCoords, toCoords }) => {
-  console.log(driverId, from, to, fromCoords, toCoords);
-  const newRoute = new Route({
-    driverId,
-    from,
-    to,
-    fromCoords,
-    toCoords,
-    route: [] // will be filled by `location-update`
+  socket.on('join-route', ({ driverId, routeId }) => {
+    socket.join(routeId);
   });
-  await newRoute.save();
-});
 
-socket.on('location-update', async ({ driverId, coords }) => {
-  const latestRoute = await Route.findOne({ driverId }).sort({ startedAt: -1 });
+  socket.on('leave-route', ({ driverId, routeId }) => {
+    socket.leave(routeId);
+  });
 
-  if (latestRoute) {
-    latestRoute.route.push(coords);
-    await latestRoute.save();
+  socket.on('start-route', async ({ driverId, from, to, fromCoords, toCoords }) => {
+    const newRoute = new Route({
+      driverId,
+      from,
+      to,
+      fromCoords,
+      toCoords,
+      route: [],
+    });
+    await newRoute.save();
+    io.to(`driver-${driverId}`).emit('route-created', newRoute);
+  });
 
-    // Broadcast to admin/vendor viewers
-    io.to(driverId.toString()).emit('location-update', { driverId, coords });
+
+  socket.on('location-update', async ({ driverId, coords ,routeId}) => {
+    const route = await Route.findById(routeId);
+    console.log(route, coords);
+  if (
+    route &&
+    Array.isArray(coords) &&
+    typeof coords[0] === 'number' &&
+    typeof coords[1] === 'number'
+  ) {
+    route.route.push(coords); // ✅ push array
+    await route.save();
+
+    io.to(driverId.toString()).emit('location-update', { driverId, coords, routeId: route._id });
   }
 });
+
+socket.on('get-latest-location', async ({ driverId, routeId }) => {
+  try {
+    const route = await Route.findById(routeId);
+    if (route && route.route.length > 0) {
+      const latestCoords = route.route[route.route.length - 1];
+      socket.emit('location-update', {
+        driverId,
+        coords: latestCoords,
+        routeId
+      });
+    }
+  } catch (err) {
+    console.error('Error sending latest location:', err);
+  }
+});
+
 
 }
 

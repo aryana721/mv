@@ -1,75 +1,110 @@
-import React, { useState } from 'react';
-import { MapContainer, TileLayer, Marker, Polyline } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import socketIOClient from 'socket.io-client';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import socketIOClient from 'socket.io-client';
 
 const socket = socketIOClient('http://localhost:5000');
 
 const DriverPage = () => {
-  const [tracking, setTracking] = useState(false);
-  const [route, setRoute] = useState([]);
-  const [coords, setCoords] = useState({ from: '', to: '' });
+  const [user, setUser] = useState(null);
+  const [routes, setRoutes] = useState([]);
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  const navigate = useNavigate();
 
-  const user = JSON.parse(localStorage.getItem('user'));
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      const parsedUser = JSON.parse(storedUser);
+      setUser(parsedUser);
+      socket.emit('joinRoom', parsedUser._id);
+      fetchRoutes(parsedUser._id);
+    } else {
+      navigate('/login');
+    }
+  }, []);
 
-  const geocode = async location => {
+  const fetchRoutes = async (driverId) => {
+    try {
+      const res = await api.get(`/driver/driver/${driverId}`);
+      setRoutes(res.data);
+    } catch (err) {
+      console.error('Error fetching routes:', err);
+    }
+  };
+
+  const geocode = async (location) => {
     const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${location}`);
     const data = await res.json();
     return data[0] ? [parseFloat(data[0].lat), parseFloat(data[0].lon)] : null;
   };
 
-  const startRoute = async () => {
-    if (!coords.from || !coords.to) return alert('Enter from/to');
+  const handleCreateRoute = async () => {
+    if (!from || !to) return alert('Both "From" and "To" fields are required');
 
-    const fromCoords = await geocode(coords.from);
-    const toCoords = await geocode(coords.to);
-    console.log(fromCoords, toCoords);
-    if (!fromCoords || !toCoords) return alert('Invalid location(s)');
+    const fromCoords = await geocode(from);
+    const toCoords = await geocode(to);
+
+    if (!fromCoords || !toCoords) {
+      alert('Invalid location entered. Please try again.');
+      return;
+    }
 
     socket.emit('start-route', {
       driverId: user._id,
-      from: coords.from,
-      to: coords.to,
+      from,
+      to,
       fromCoords,
       toCoords
     });
 
-    setTracking(true);
+    // Wait a moment to let backend save the new route, then refresh
+    setTimeout(() => fetchRoutes(user._id), 1000);
+    setFrom('');
+    setTo('');
+  };
 
-    navigator.geolocation.watchPosition(pos => {
-      const latLng = [pos.coords.latitude, pos.coords.longitude];
-      setRoute(prev => [...prev, latLng]);
-      socket.emit('location-update', {
-        driverId: user._id,
-        coords: latLng,
-      });
-    });
+  const handleContinue = (routeId) => {
+    navigate(`/driver/route/${routeId}`);
   };
 
   return (
-    <div>
-      <h2>Driver Page</h2>
-      {!tracking && (
-        <div>
-          <input
-            placeholder="From (e.g., Delhi)"
-            onChange={e => setCoords({ ...coords, from: e.target.value })}
-          />
-          <input
-            placeholder="To (e.g., Mumbai)"
-            onChange={e => setCoords({ ...coords, to: e.target.value })}
-          />
-          <button onClick={startRoute}>Start Route</button>
-        </div>
+    <div style={{ padding: 20 }}>
+      <h2>My Routes</h2>
+
+      {routes.length === 0 ? (
+        <p>No routes assigned yet.</p>
+      ) : (
+        <ul>
+          {routes.map(route => (
+            <li key={route._id} style={{ marginBottom: 10 }}>
+              <div>
+                <strong>From:</strong> {route.from}<br />
+                <strong>To:</strong> {route.to}<br />
+                <button onClick={() => handleContinue(route._id)}>Continue</button>
+              </div>
+            </li>
+          ))}
+        </ul>
       )}
-      {tracking && (
-        <MapContainer center={route[0] || [0, 0]} zoom={13} style={{ height: '400px' }}>
-          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          <Polyline positions={route} color="green" />
-          {route.length > 0 && <Marker position={route[route.length - 1]} />} 
-        </MapContainer>
-      )}
+
+      <hr />
+      <h3>Create New Route</h3>
+      <input
+        type="text"
+        placeholder="From (e.g., Delhi)"
+        value={from}
+        onChange={(e) => setFrom(e.target.value)}
+        style={{ marginRight: 10 }}
+      />
+      <input
+        type="text"
+        placeholder="To (e.g., Mumbai)"
+        value={to}
+        onChange={(e) => setTo(e.target.value)}
+        style={{ marginRight: 10 }}
+      />
+      <button onClick={handleCreateRoute}>Create Route</button>
     </div>
   );
 };

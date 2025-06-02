@@ -1,10 +1,13 @@
 
 const express = require('express');
 const router = express.Router();
-const DriverLocation = require('../models/DriverLocation');
+const Route = require('../models/DriverLocation');
 
-router.get('/:driverId/route', async (req, res) => {
-  const route = await DriverLocation.findOne({ driverId: req.params.driverId }).sort({ startedAt: -1 });
+router.get('/:driverId/:routeId/route', async (req, res) => {
+  const route = await Route.findOne({
+    driverId: req.params.driverId,
+    _id: req.params.routeId
+  });
 
   if (!route) return res.status(404).json({ error: 'No route found' });
 
@@ -14,5 +17,15 @@ router.get('/:driverId/route', async (req, res) => {
     toCoords: route.toCoords
   });
 });
+
+// GET /api/routes/driver/:driverId
+router.get('/driver/:driverId', async (req, res) => {
+  const routes = await Route.find({ driverId: req.params.driverId });
+  res.json(routes);
+});
+
+
+
+
 
 module.exports = router;
