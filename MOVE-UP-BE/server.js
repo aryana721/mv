@@ -28,6 +28,10 @@ app.use('/admin', adminRoutes);
 app.use('/vendor', vendorRoutes);
 app.use('/driver', driverRoutes);
 
+app.get('/', (req, res) => {
+  res.send('Welcome to MOVE-UP Backend API');
+});
+
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI).then(() => console.log('MongoDB connected'))
   .catch(err => console.log(err));
